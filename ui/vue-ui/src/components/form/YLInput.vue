@@ -5,14 +5,17 @@
 </template>
 
 <script>
+import emitter from "../../mixins/emitter";
+
 export default {
   name: "YLInput",
+  mixins: [emitter],
   methods: {
     onInput(e) {
       this.$emit("input", e.target.value);
     },
     onBlur() {
-      this.$parent.$emit("validate");
+      this.dispatch("YLInputItem", "validate");
     },
   },
 };
