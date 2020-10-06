@@ -10,7 +10,7 @@
 import Schema from "async-validator";
 
 export default {
-  name: "YLInputItem",
+  name: "YlInputItem",
   inject: ["form"],
   props: {
     label: {

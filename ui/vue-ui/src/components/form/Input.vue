@@ -8,14 +8,14 @@
 import emitter from "../../mixins/emitter";
 
 export default {
-  name: "YLInput",
+  name: "YlInput",
   mixins: [emitter],
   methods: {
     onInput(e) {
       this.$emit("input", e.target.value);
     },
     onBlur() {
-      this.dispatch("YLInputItem", "validate");
+      this.dispatch("YlInputItem", "validate");
     },
   },
 };
