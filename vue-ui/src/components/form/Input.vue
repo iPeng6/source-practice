@@ -8,6 +8,7 @@
 import emitter from "../../mixins/emitter";
 
 export default {
+  inheritAttrs: false,
   name: "YlInput",
   mixins: [emitter],
   methods: {
