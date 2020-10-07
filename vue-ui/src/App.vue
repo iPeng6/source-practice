@@ -2,32 +2,32 @@
   <div id="app">
     <img alt="Vue logo" src="./assets/logo.png" />
     <YlForm :model="userinfo" :rules="rules" ref="form">
-      <YlInputItem label="姓名" prop="username">
+      <YlFormItem label="姓名" prop="username">
         <YlInput v-model="userinfo.username" placeholder="请输入姓名" />
-      </YlInputItem>
-      <YlInputItem label="密码" prop="password">
+      </YlFormItem>
+      <YlFormItem label="密码" prop="password">
         <YlInput
           v-model="userinfo.password"
           type="password"
           placeholder="请输入密码"
         />
-      </YlInputItem>
-      <YlInputItem>
+      </YlFormItem>
+      <YlFormItem>
         <button @click="onSubmit">submit</button>
-      </YlInputItem>
+      </YlFormItem>
     </YlForm>
   </div>
 </template>
 <script>
 import YlInput from "@/components/form/Input.vue";
-import YlInputItem from "@/components/form/InputItem.vue";
+import YlFormItem from "@/components/form/FormItem.vue";
 import YlForm from "@/components/form/Form.vue";
 
 export default {
   name: "App",
   components: {
     YlInput,
-    YlInputItem,
+    YlFormItem,
     YlForm,
   },
   data() {
