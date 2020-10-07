@@ -13,7 +13,9 @@ class VueRouter {
 
     _Vue.util.defineReactive(this, 'current', this.getUrl())
 
-    if (options.mode !== 'history') {
+    if (options.mode === 'history') {
+      window.addEventListener('popstate', this.routeChange.bind(this))
+    } else {
       window.addEventListener('hashchange', this.routeChange.bind(this), false)
     }
   }
