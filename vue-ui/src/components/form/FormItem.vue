@@ -45,10 +45,9 @@ export default {
     },
   },
   mounted() {
-    this.$on("validate", this.validate);
-  },
-  destroyed() {
-    this.$off("validate", this.validate);
+    this.$on("validate", () => {
+      this.validate().catch(() => {});
+    });
   },
 };
 </script>

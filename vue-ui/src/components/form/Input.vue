@@ -16,7 +16,7 @@ export default {
       this.$emit("input", e.target.value);
     },
     onBlur() {
-      this.dispatch("YlInputItem", "validate");
+      this.dispatch("YlFormItem", "validate");
     },
   },
 };
