@@ -5,18 +5,27 @@ let _Vue
 
 class VueRouter {
   constructor(options) {
+    this._options = options
     this.routeMap = new Map()
     options.routes.forEach((route) => {
       this.routeMap.set(route.path, route.component)
     })
 
-    _Vue.util.defineReactive(this, 'current', '/')
+    _Vue.util.defineReactive(this, 'current', this.getUrl())
 
-    window.addEventListener('hashchange', this.hashchange.bind(this), false)
-    window.addEventListener('load', this.hashchange.bind(this), false)
+    if (options.mode !== 'history') {
+      window.addEventListener('hashchange', this.routeChange.bind(this), false)
+    }
   }
-  hashchange() {
-    this.current = location.hash.slice(1)
+  routeChange() {
+    this.current = this.getUrl()
+  }
+  getUrl() {
+    if (this._options.mode !== 'history') {
+      return location.hash.slice(1) || '/'
+    } else {
+      return location.pathname || '/'
+    }
   }
 }
 
