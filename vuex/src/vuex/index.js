@@ -2,7 +2,7 @@ let Vue
 
 class Store {
   constructor(options) {
-    this.state = options.state
+    // this.state = options.state
     this.mutations = options.mutations
     this.actions = options.actions
     this.getters = {}
@@ -21,13 +21,16 @@ class Store {
 
     this._vm = new Vue({
       data: {
-        state: options.state,
+        $$state: options.state,
       },
       computed,
     })
 
     this.commit = this.commit.bind(this)
     this.dispatch = this.dispatch.bind(this)
+  }
+  get state() {
+    return this._vm._data.$$state
   }
   commit(type, payload) {
     this.mutations[type](this.state, payload)

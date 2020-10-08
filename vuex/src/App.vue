@@ -1,10 +1,14 @@
 <template>
   <div id="app">
     <img alt="Vue logo" src="./assets/logo.png" />
-    <div @click="$store.commit('add')">count:{{ $store.state.count }}</div>
-    <div @click="$store.dispatch('add')">count:{{ $store.state.count }}</div>
+    <div @click="$store.commit('add')">
+      commit count:{{ $store.state.count }}
+    </div>
+    <div @click="$store.dispatch('add')">
+      dispatch count:{{ $store.state.count }}
+    </div>
 
-    <div>doubleCount: {{ $store.getters.doubleCount }}</div>
+    <div>getter doubleCount: {{ $store.getters.doubleCount }}</div>
   </div>
 </template>
 
