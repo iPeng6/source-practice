@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app">
+      <input type="text" v-model="name" />
+      <div>name:{{name}} count: {{count}}</div>
+      <button @click="add">add</button>
+    </div>
+    <!-- <script src="./vue1.0/dist/vue.js"></script> -->
+    <script src="./vue.js"></script>
+    <script>
+      const app = new Vue({
+        el: '#app',
+        data() {
+          return {
+            name: 'asdf',
+            count: 1,
+          }
+        },
+        methods: {
+          add() {
+            this.count++
+          },
+        },
+      })
+    </script>
+  </body>
+</html>
