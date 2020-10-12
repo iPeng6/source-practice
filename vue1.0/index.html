@@ -8,7 +8,7 @@
   <body>
     <div id="app">
       <input type="text" v-model="name" />
-      <div>name:{{name}} count: {{count}}</div>
+      <div v-bind:title="name">name:{{name}} count: {{count}}</div>
       <button @click="add">add</button>
     </div>
     <!-- <script src="./vue1.0/dist/vue.js"></script> -->

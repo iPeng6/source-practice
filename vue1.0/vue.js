@@ -7,7 +7,7 @@ function Vue(options) {
   this.proxyMethods(options.methods)
 
   // 响应式处理
-  Observer.create(this.$data, this)
+  Observer.create(this.$data)
 
   // 编译，创建watcher
   if (options.el) {
@@ -54,13 +54,15 @@ function Observer(obj) {
   })
 }
 
-Observer.create = function (obj, vm) {
+Observer.create = function (obj) {
   if (!obj || typeof obj !== 'object') return
-  new Observer(obj)
+  const ob = new Observer(obj)
+  return ob
 }
 
 function defineReactive(obj, key, val) {
   const dep = new Dep()
+  Observer.create(this.$data)
   Object.defineProperty(obj, key, {
     get() {
       console.log('get:', key, val)
@@ -144,38 +146,61 @@ Compile.prototype.compileElement = function (node) {
   Array.from(attrs).forEach((attr) => {
     const attrName = attr.name
     const exp = attr.value
-    if (attrName.startsWith('v-')) {
-      const dir = attrName.substring(2)
-      this.directives[dir](node, exp, this.vm)
+    if (attrName.startsWith('v-bind:')) {
+      this.directives['bind'](node, exp, attrName, this.vm)
     } else if (attrName.startsWith('@')) {
-      const event = attrName.substring(1)
-      node.addEventListener(event, this.vm[exp])
+      this.directives['on'](node, exp, attrName, this.vm)
+    } else if (attrName.startsWith('v-')) {
+      const dir = attrName.substring(2)
+      this.directives[dir](node, exp, attrName, this.vm)
     }
   })
 }
 Compile.prototype.compileTextNode = function (node) {
-  console.log('编译插值文本' + node.data)
   const content = node.data
-  if (/\{\{(\w*)\}\}/i.test(node.data)) {
-    const updateFn = () => {
-      node.textContent = content.replace(/\{\{(\w*)\}\}/gi, (sv, rv) => {
-        return this.vm[rv]
-      })
-    }
-    const matches = node.data.matchAll(/\{\{(\w*)\}\}/g)
-    for (const match of matches) {
-      const exp = match[1]
-      const watcher = new Watcher(this.vm, exp, updateFn)
-      watcher.update()
-    }
+  if (/\{\{(.*)\}\}/.test(node.data)) {
+    console.log('编译插值文本' + node.data)
+    this.directives['interp'](node, content, this.vm)
   }
 }
 
 Compile.prototype.directives = {
-  model(node, exp, vm) {
-    node.value = vm[exp]
+  // 插值
+  interp(node, exp, vm) {
+    const updateFn = () => {
+      node.textContent = exp.replace(/\{\{(\w*)\}\}/gi, (sv, rv) => {
+        return vm[rv]
+      })
+    }
+    const matches = node.data.matchAll(/\{\{(\w*)\}\}/g)
+    let watcher
+    for (const match of matches) {
+      const exp = match[1]
+      watcher = new Watcher(vm, exp, updateFn)
+    }
+    // 首次主动触发
+    updateFn()
+  },
+  bind(node, exp, attrName, vm) {
+    node.removeAttribute(attrName)
+    const attr = attrName.replace('v-bind:', '')
+    const watcher = new Watcher(vm, exp, () => {
+      node.setAttribute(attr, vm[exp])
+    })
+    watcher.update()
+  },
+  on(node, exp, attrName, vm) {
+    const event = attrName.substring(1)
+    node.addEventListener(event, vm[exp])
+  },
+  model(node, exp, attrName, vm) {
+    node.removeAttribute(attrName)
     node.addEventListener('input', (e) => {
       vm[exp] = e.target.value
     })
+    const watcher = new Watcher(vm, exp, () => {
+      node.value = vm[exp]
+    })
+    watcher.update()
   },
 }
