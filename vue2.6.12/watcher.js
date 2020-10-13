@@ -14,6 +14,10 @@ class Watcher {
 
     if (typeof expOrFn === 'function') {
       this.getter = expOrFn
+    } else {
+      this.getter = () => {
+        return vm[expOrFn]
+      }
     }
 
     this.value = this.get()
@@ -23,6 +27,7 @@ class Watcher {
     pushTarget(this)
     let value = this.getter.call(this.vm, this.vm)
     popTarget(this)
+    return value
   }
 
   addDep(dep) {
@@ -30,7 +35,16 @@ class Watcher {
   }
 
   update() {
-    this.cb.call(vm)
+    this.run()
+  }
+  run() {
+    const value = this.get()
+    if (value !== this.value) {
+      const oldValue = this.value
+      this.value = value
+
+      this.cb.call(this.vm, value, oldValue)
+    }
   }
 }
 
