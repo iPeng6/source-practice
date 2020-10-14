@@ -40,6 +40,7 @@ function compileToFunctions(template) {
   console.log('ast', ast)
   // 2. ast => generate => code
   const code = generate(ast)
+
   return new Function(code.render)
 }
 
@@ -176,12 +177,14 @@ function parse(html) {
     if (!root) {
       root = currentParent = element
     }
+
+    processAttr(element)
   }
 
   return root
 }
 
-let root
+let root // 用于最后返回整棵树
 let currentParent // 用于构建ast树
 
 function createASTElement(tag, attrs, parent) {
@@ -197,11 +200,30 @@ function createASTElement(tag, attrs, parent) {
 }
 
 function makeAttrsMap(attrs) {
-  const map = {}
-  for (let i = 0, l = attrs.length; i < l; i++) {
-    map[attrs[i].name] = attrs[i].value
-  }
+  const map = new Map()
+  attrs.forEach(({ name, value }) => {
+    map.set(name, value)
+  })
+
   return map
+}
+const onRE = /^@|^v-on:/
+function processAttr(el) {
+  let events
+  el.attrsList.forEach((attr) => {
+    let { name, value } = attr
+    if (onRE.test(name)) {
+      // v-on
+      name = name.replace(onRE, '')
+      if (!events) events = {}
+      events[name] = {
+        value,
+      }
+    }
+  })
+  if (events) {
+    el.events = events
+  }
 }
 
 const tagRE = /\{\{((?:.|\r?\n)+?)\}\}/g
@@ -237,13 +259,14 @@ function parseText(text) {
 }
 function generate(ast) {
   const code = ast ? genElement(ast) : '_c("div")'
+  console.log(code)
   return {
     render: `with(this){return ${code}}`,
   }
 }
 
 function genElement(ast) {
-  return `_c('${ast.tag}', ${getData(ast)}, ${getChildren(ast)})`
+  return `_c('${ast.tag}', ${genData(ast)}, ${getChildren(ast)})`
 }
 
 function getChildren(ast) {
@@ -264,10 +287,26 @@ function genText(text) {
   return `_v(${text.type === 2 ? text.expression : JSON.stringify(text.text)})`
 }
 
-function getData(ast) {
-  return `{attrs:{${ast.attrsList.map(
-    (attr) => `${attr.name}: '${attr.value}'`
-  )}}`
+function genData(ast) {
+  let data
+
+  data = `{attrs:{${ast.attrsList
+    .filter((attr) => {
+      if (ast.events && ast.attrsMap.has(attr.name)) {
+        return false
+      }
+      return true
+    })
+    .map((attr) => `${attr.name}: '${attr.value}'`)
+    .join(',')}}`
+  if (ast.events) {
+    data += ','
+    data += `on:{${Object.keys(ast.events).map(
+      (ev) => `${ev}:${ast.events[ev].value}`
+    )}}`
+  }
+  data += '}'
+  return data
 }
 
 
