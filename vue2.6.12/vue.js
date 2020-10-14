@@ -2,6 +2,7 @@ import Watcher from './watcher'
 import { compileToFunctions } from './compiler'
 import { initState } from './init'
 import { initRender } from './render'
+import { patch } from './vdom'
 
 function Vue(options) {
   this._watcher = null
@@ -50,8 +51,20 @@ Vue.prototype._render = function () {
   return vnode
 }
 
+let prevVnode
 Vue.prototype._update = function (vnode) {
   console.log('update: vnode => dom', vnode)
+  const vm = this
+
+  if (!prevVnode) {
+    // initial render
+    vm.$el = patch(vm.$el, vnode, false /* removeOnly */)
+  } else {
+    // updates
+    vm.$el = patch(prevVnode, vnode)
+  }
+
+  prevVnode = vnode
 }
 
 function noop() {}

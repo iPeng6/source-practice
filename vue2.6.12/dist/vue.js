@@ -421,6 +421,44 @@ function proxy(target, sourceKey, key) {
 
 /***/ }),
 
+/***/ "./node-ops.js":
+/*!*********************!*\
+  !*** ./node-ops.js ***!
+  \*********************/
+/*! namespace exports */
+/*! export appendChild [provided] [no usage info] [missing usage info prevents renaming] */
+/*! export createElement [provided] [no usage info] [missing usage info prevents renaming] */
+/*! export createTextNode [provided] [no usage info] [missing usage info prevents renaming] */
+/*! export insertBefore [provided] [no usage info] [missing usage info prevents renaming] */
+/*! other exports [not provided] [no usage info] */
+/*! runtime requirements: __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "createElement": () => /* binding */ createElement,
+/* harmony export */   "createTextNode": () => /* binding */ createTextNode,
+/* harmony export */   "insertBefore": () => /* binding */ insertBefore,
+/* harmony export */   "appendChild": () => /* binding */ appendChild
+/* harmony export */ });
+function createElement(tagName) {
+  return document.createElement(tagName)
+}
+function createTextNode(data) {
+  return document.createTextNode(data)
+}
+
+function insertBefore(parentNode, newNode, referenceNode) {
+  parentNode.insertBefore(newNode, referenceNode)
+}
+
+function appendChild(node, child) {
+  node.appendChild(child)
+}
+
+
+/***/ }),
+
 /***/ "./observer.js":
 /*!*********************!*\
   !*** ./observer.js ***!
@@ -577,15 +615,20 @@ function toString(val) {
 /*! namespace exports */
 /*! export createTextVNode [provided] [no usage info] [missing usage info prevents renaming] */
 /*! export default [provided] [no usage info] [missing usage info prevents renaming] */
+/*! export patch [provided] [no usage info] [missing usage info prevents renaming] */
 /*! other exports [not provided] [no usage info] */
-/*! runtime requirements: __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
+/*! runtime requirements: __webpack_require__, __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => /* binding */ VNode,
-/* harmony export */   "createTextVNode": () => /* binding */ createTextVNode
+/* harmony export */   "createTextVNode": () => /* binding */ createTextVNode,
+/* harmony export */   "patch": () => /* binding */ patch
 /* harmony export */ });
+/* harmony import */ var _node_ops__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./node-ops */ "./node-ops.js");
+
+
 class VNode {
   constructor(tag, data, children, text, context) {
     this.tag = tag
@@ -598,6 +641,46 @@ class VNode {
 
 function createTextVNode(val) {
   return new VNode(undefined, undefined, undefined, String(val))
+}
+
+function patch(oldVnode, vnode) {
+  if (oldVnode instanceof VNode) {
+    // diff todo
+    const root = createNode(vnode)
+    vnode.el = root
+    document.body.replaceChild(root, oldVnode.el)
+  } else {
+    // 首次挂载
+    const root = createNode(vnode)
+    vnode.el = root
+    _node_ops__WEBPACK_IMPORTED_MODULE_0__.insertBefore(document.body, root, oldVnode)
+    document.body.removeChild(oldVnode)
+  }
+
+  function createNode(vnode, parent) {
+    let node
+    if (vnode.tag && vnode.children) {
+      node = _node_ops__WEBPACK_IMPORTED_MODULE_0__.createElement(vnode.tag)
+      vnode.children.forEach((vn) => {
+        const dom = createNode(vn, node)
+        if (vn.data && vn.data.on) {
+          Object.keys(vn.data.on).forEach((event) => {
+            dom.addEventListener(event, () => {
+              console.log('click')
+              vn.data.on[event]()
+            })
+          })
+        }
+      })
+    } else {
+      node = _node_ops__WEBPACK_IMPORTED_MODULE_0__.createTextNode(vnode.text)
+    }
+
+    if (parent) {
+      _node_ops__WEBPACK_IMPORTED_MODULE_0__.appendChild(parent, node)
+    }
+    return node
+  }
 }
 
 
@@ -621,6 +704,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _compiler__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./compiler */ "./compiler.js");
 /* harmony import */ var _init__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./init */ "./init.js");
 /* harmony import */ var _render__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./render */ "./render.js");
+/* harmony import */ var _vdom__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./vdom */ "./vdom.js");
+
 
 
 
@@ -673,8 +758,20 @@ Vue.prototype._render = function () {
   return vnode
 }
 
+let prevVnode
 Vue.prototype._update = function (vnode) {
   console.log('update: vnode => dom', vnode)
+  const vm = this
+
+  if (!prevVnode) {
+    // initial render
+    vm.$el = (0,_vdom__WEBPACK_IMPORTED_MODULE_4__.patch)(vm.$el, vnode, false /* removeOnly */)
+  } else {
+    // updates
+    vm.$el = (0,_vdom__WEBPACK_IMPORTED_MODULE_4__.patch)(prevVnode, vnode)
+  }
+
+  prevVnode = vnode
 }
 
 function noop() {}
