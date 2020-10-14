@@ -8,6 +8,14 @@ function Vue(options) {
   this._watchers = []
   this._init(options)
 }
+
+Vue.prototype.$forceUpdate = function () {
+  const vm = this
+  if (vm._watcher) {
+    vm._watcher.update()
+  }
+}
+
 Vue.prototype._init = function (options) {
   this.$options = options
   const vm = this
