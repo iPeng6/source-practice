@@ -330,8 +330,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "pushTarget": () => /* binding */ pushTarget,
 /* harmony export */   "popTarget": () => /* binding */ popTarget
 /* harmony export */ });
+let uid = 0
 class Dep {
   constructor() {
+    this.id = uid++
     this.subs = []
   }
   addSub(sub) {
@@ -526,7 +528,7 @@ function defineReactive(obj, key) {
       return val
     },
     set(newVal) {
-      console.log('set', key, val)
+      console.log('set', key, val, newVal)
       if (newVal === val) return
       val = newVal
       childOb = observe(newVal)
@@ -804,6 +806,7 @@ class Watcher {
     this.cb = cb
     this.id = ++uid
     this.deps = []
+    this.depIds = new Set()
     if (isRenderWatcher) {
       vm._watcher = this
     }
@@ -828,7 +831,10 @@ class Watcher {
   }
 
   addDep(dep) {
-    dep.addSub(this)
+    if (!this.depIds.has(dep.id)) {
+      dep.addSub(this)
+      this.depIds.add(dep.id)
+    }
   }
 
   update() {

@@ -48,7 +48,7 @@ function defineReactive(obj, key) {
       return val
     },
     set(newVal) {
-      console.log('set', key, val)
+      console.log('set', key, val, newVal)
       if (newVal === val) return
       val = newVal
       childOb = observe(newVal)

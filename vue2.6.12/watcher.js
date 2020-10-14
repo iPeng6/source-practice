@@ -7,6 +7,7 @@ class Watcher {
     this.cb = cb
     this.id = ++uid
     this.deps = []
+    this.depIds = new Set()
     if (isRenderWatcher) {
       vm._watcher = this
     }
@@ -31,7 +32,10 @@ class Watcher {
   }
 
   addDep(dep) {
-    dep.addSub(this)
+    if (!this.depIds.has(dep.id)) {
+      dep.addSub(this)
+      this.depIds.add(dep.id)
+    }
   }
 
   update() {
