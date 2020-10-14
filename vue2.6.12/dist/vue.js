@@ -646,6 +646,7 @@ function createTextVNode(val) {
 }
 
 function patch(oldVnode, vnode) {
+  console.log('patch', oldVnode, vnode)
   if (oldVnode instanceof VNode) {
     // diff todo
     const root = createNode(vnode)

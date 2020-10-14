@@ -105,8 +105,74 @@ Vue.prototype.$mount = function() {
    - **observe(data) 数据响应式处理**
    - provide 处理
 3. \$mount
+
    - 得到渲染函数
    - mountComponent
      - 创建 watcher
      - 触发更新 updateComponent
        - vm.\_update(vm.\_render(), hydrating)
+
+4. 数据修改更新
+   1. patch
+      1. 首次
+      2. diff
+
+### 模板编译
+
+```html
+<div id="app">
+  <button @click="add">click</button>
+</div>
+```
+
+得到 ast
+
+```js
+ast = {
+  type: 1,
+  tag: 'div',
+  attrsList: [{ name: 'id', value: 'app' }],
+  children: [
+    {
+      type: 1,
+      tag: 'button',
+      attrsList: [{ name: '@click', value: 'add' }],
+      children: [{ type: 3, text: 'click' }],
+      parent: {},
+    },
+  ],
+  parent: undefined,
+}
+```
+
+generate 生成 render 函数
+
+```js
+;(function anonymous() {
+  with (this) {
+    return _c('div', { attrs: { id: 'app' } }, [
+      _c('button', { on: { click: add } }, [_v(_s(count))]),
+    ])
+  }
+})
+```
+
+执行 render 函数得到 VNode
+
+```js
+vnode = {
+  tag:'divta
+  data:{id:'app'},
+  children:[
+    {
+      tag: 'button',
+    	data:{on:{click:add()}},
+      children:[
+        {text:0,context:vm}
+      ],
+      context:vm
+    }
+  ],
+  context:vm
+}
+```
