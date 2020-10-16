@@ -7,6 +7,7 @@ export default class VNode {
     this.children = children
     this.text = text
     this.context = context
+    this.key = data && data.key
   }
 }
 
@@ -25,7 +26,7 @@ export function patch(oldVnode, vnode) {
     patchVnode(oldVnode, vnode)
   } else {
     // 首次挂载
-    vnode.elm = createElm(vnode)
+    vnode.elm = createElm(vnode, document.body)
 
     nodeOps.insertBefore(document.body, vnode.elm, oldVnode)
     document.body.removeChild(oldVnode)
@@ -33,13 +34,15 @@ export function patch(oldVnode, vnode) {
 }
 
 function createElm(vnode, parentElm) {
-  if (vnode.tag && vnode.children) {
+  // console.log(vnode.tag)
+  if (vnode.tag) {
     vnode.elm = nodeOps.createElement(vnode.tag)
 
     vnode.children.forEach((vn) => {
       const chElm = createElm(vn, vnode.elm)
       if (vn.data && vn.data.on) {
         Object.keys(vn.data.on).forEach((event) => {
+          console.log('listener')
           chElm.addEventListener(event, () => {
             console.log('click')
             vn.data.on[event]()
@@ -57,8 +60,8 @@ function createElm(vnode, parentElm) {
   return vnode.elm
 }
 
-function patchVnode(oldVnode, vnode, ownerArray, index) {
-  const elm = (vnode.elm = oldVnode.elm)
+function patchVnode(oldVnode, vnode) {
+  const elm = (vnode.elm = oldVnode.elm) // 直接复用dom
 
   const oldCh = oldVnode.children
   const ch = vnode.children
@@ -77,12 +80,60 @@ function patchVnode(oldVnode, vnode, ownerArray, index) {
   }
 }
 
-// TODO: diff算法 新旧首位两两比较
+// diff算法
 function updateChildren(parentElm, oldCh, newCh) {
-  for (let i = 0; i < oldCh.length; i++) {
-    const oldVnode = oldCh[i]
-    const newVnode = newCh[i]
-    patchVnode(oldVnode, newVnode)
+  let oldStartIdx = 0
+  let newStartIdx = 0
+  let oldEndIdx = oldCh.length - 1
+  let newEndIdx = newCh.length - 1
+  let oldStartVnode = oldCh[0]
+  let newStartVnode = newCh[0]
+  let oldEndVnode = oldCh[oldEndIdx]
+  let newEndVnode = newCh[newEndIdx]
+
+  let refElm
+
+  while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
+    // 这里oldVnode 不存在 是因为，之前的比对中根据key 找出来挪走了
+    if (!oldStartVnode) {
+      oldStartVnode = [++oldStartIdx]
+    } else if (!oldEndVnode) {
+      oldEndVnode = [--oldEndIdx]
+    } else if (sameVnode(oldStartVnode, newStartVnode)) {
+      patchVnode(oldStartVnode, newStartVnode)
+      oldStartVnode = oldCh[++oldStartIdx]
+      newStartVnode = newCh[++newStartIdx]
+    } else if (sameVnode(oldEndVnode, newEndVnode)) {
+      patchVnode(oldEndVnode, newEndVnode)
+      oldEndVnode = oldCh[--oldEndIdx]
+      newEndVnode = newCh[--newEndIdx]
+    } else if (sameVnode(oldStartVnode, newEndVnode)) {
+      // 老头 新尾
+      patchVnode(oldStartVnode, newEndVnode)
+      nodeOps.insertBefore(
+        parentElm,
+        oldStartVnode.elm,
+        nodeOps.nextSibling(oldEndVnode.elm)
+      )
+      oldStartVnode = oldCh[++oldStartIdx]
+      newEndVnode = newCh[--newEndIdx]
+    } else if (sameVnode(oldEndVnode, newStartVnode)) {
+      patchVnode(oldEndVnode, newStartVnode)
+      nodeOps.insertBefore(parentElm, oldEndVnode.elm, newStartVnode.elm)
+      oldEndVnode = oldCh[--oldEndIdx]
+      newStartVnode = newCh[++newStartIdx]
+    } else {
+      // TODO: 如果以上都没匹配到，就根据新的key 从老的节点里 把它找出来，然后挪到 newStartIdx 的位置，并清空
+      createElm(newStartVnode, parentElm)
+      newStartVnode = newCh[++newStartIdx]
+    }
+  }
+
+  if (oldStartIdx > oldEndIdx) {
+    refElm = !newCh[newEndIdx + 1] ? null : newCh[newEndIdx + 1].elm
+    addVnodes(parentElm, newCh, newStartIdx, newEndIdx)
+  } else if (newStartIdx > newEndIdx) {
+    removeVnodes(oldCh, oldStartIdx, oldEndIdx)
   }
 }
 
@@ -95,7 +146,7 @@ function addVnodes(parentElm, vnodes, startIdx, endIdx) {
 function removeVnodes(vnodes, startIdx, endIdx) {
   for (; startIdx <= endIdx; ++startIdx) {
     const ch = vnodes[startIdx]
-    if (isDef(ch)) {
+    if (ch) {
       removeNode(ch.elm)
     }
   }
@@ -106,4 +157,8 @@ function removeNode(el) {
   if (parent) {
     nodeOps.removeChild(parent, el)
   }
+}
+
+function sameVnode(a, b) {
+  return a.key === b.key && a.tag === b.tag
 }

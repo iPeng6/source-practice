@@ -8,6 +8,9 @@
   <body>
     <div id="app">
       <button @click="add">{{count}}</button>
+      <ul>
+        <li v-for="item in items" :key="item">{{item}}</li>
+      </ul>
     </div>
     <!-- <script src="./vue-srouce/dist/vue.js"></script> -->
     <script src="./dist/vue.js"></script>
@@ -17,11 +20,13 @@
         data() {
           return {
             count: 0,
+            items: ['a', 'b', 'c', 'd'],
           }
         },
         methods: {
           add() {
             this.count++
+            this.items = Array.from(Math.random().toString().slice(8))
           },
         },
       })

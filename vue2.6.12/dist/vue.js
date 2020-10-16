@@ -55,7 +55,7 @@ const endTag = new RegExp(`^<\\/${qnameCapture}[^>]*>`)
 function parse(html) {
   const stack = []
   let index = 0
-  let last, lastTag
+  let last
   while (html) {
     last = html
     let textEnd = html.indexOf('<')
@@ -161,14 +161,9 @@ function parse(html) {
       }
     }
 
-    stack.push({
-      tag: tagName,
-      attrs: attrs,
-    })
-    lastTag = tagName
-
     // createASTElement
     let element = createASTElement(tagName, attrs, currentParent)
+    stack.push(element)
     if (currentParent) {
       currentParent.children.push(element)
       currentParent = element
@@ -178,7 +173,7 @@ function parse(html) {
       root = currentParent = element
     }
 
-    processAttr(element)
+    processAttrs(element)
   }
 
   return root
@@ -193,7 +188,6 @@ function createASTElement(tag, attrs, parent) {
     tag,
     attrsList: attrs,
     attrsMap: makeAttrsMap(attrs),
-    rawAttrsMap: {},
     parent,
     children: [],
   }
@@ -208,17 +202,26 @@ function makeAttrsMap(attrs) {
   return map
 }
 const onRE = /^@|^v-on:/
-function processAttr(el) {
+function processAttrs(el) {
   let events
   el.attrsList.forEach((attr) => {
     let { name, value } = attr
+    // v-on
     if (onRE.test(name)) {
-      // v-on
       name = name.replace(onRE, '')
       if (!events) events = {}
       events[name] = {
         value,
       }
+    }
+    //v-for
+    if (name === 'v-for') {
+      const [alias, forItems] = value.split(' in ')
+      el.alias = alias
+      el.for = forItems
+    }
+    if (name === ':key') {
+      el.key = value
     }
   })
   if (events) {
@@ -266,6 +269,9 @@ function generate(ast) {
 }
 
 function genElement(ast) {
+  if (ast.for && !ast.forProcessed) {
+    return genFor(ast)
+  }
   return `_c('${ast.tag}', ${genData(ast)}, ${getChildren(ast)})`
 }
 
@@ -288,25 +294,43 @@ function genText(text) {
 }
 
 function genData(ast) {
-  let data
+  let data = '{'
 
-  data = `{attrs:{${ast.attrsList
+  const attrs = ast.attrsList
     .filter((attr) => {
+      if (attr.name === ':key') return false
+      if (attr.name.startsWith('v-')) return false
       if (ast.events && ast.attrsMap.has(attr.name)) {
         return false
       }
       return true
     })
     .map((attr) => `${attr.name}: '${attr.value}'`)
-    .join(',')}}`
+    .join(',')
+
+  if (ast.key) {
+    data += `key:${ast.key},`
+  }
+  if (attrs !== '') {
+    data += `attrs:{${attrs}},`
+  }
   if (ast.events) {
-    data += ','
-    data += `on:{${Object.keys(ast.events).map(
-      (ev) => `${ev}:${ast.events[ev].value}`
-    )}}`
+    data += `on:{${Object.keys(ast.events)
+      .map((ev) => `${ev}:${ast.events[ev].value}`)
+      .join(',')}}`
   }
   data += '}'
   return data
+}
+
+function genFor(el) {
+  const exp = el.for
+  const alias = el.alias
+
+  el.forProcessed = true // 避免死循环
+  return (
+    `_l((${exp}),` + `function(${alias}){` + `return ${genElement(el)}` + '})'
+  )
 }
 
 
@@ -432,6 +456,7 @@ function proxy(target, sourceKey, key) {
 /*! export createElement [provided] [no usage info] [missing usage info prevents renaming] */
 /*! export createTextNode [provided] [no usage info] [missing usage info prevents renaming] */
 /*! export insertBefore [provided] [no usage info] [missing usage info prevents renaming] */
+/*! export nextSibling [provided] [no usage info] [missing usage info prevents renaming] */
 /*! export parentNode [provided] [no usage info] [missing usage info prevents renaming] */
 /*! export removeChild [provided] [no usage info] [missing usage info prevents renaming] */
 /*! export setTextContent [provided] [no usage info] [missing usage info prevents renaming] */
@@ -447,7 +472,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "appendChild": () => /* binding */ appendChild,
 /* harmony export */   "setTextContent": () => /* binding */ setTextContent,
 /* harmony export */   "parentNode": () => /* binding */ parentNode,
-/* harmony export */   "removeChild": () => /* binding */ removeChild
+/* harmony export */   "removeChild": () => /* binding */ removeChild,
+/* harmony export */   "nextSibling": () => /* binding */ nextSibling
 /* harmony export */ });
 function createElement(tagName) {
   return document.createElement(tagName)
@@ -474,6 +500,10 @@ function parentNode(node) {
 
 function removeChild(node, child) {
   node.removeChild(child)
+}
+
+function nextSibling(node) {
+  return node.nextSibling
 }
 
 
@@ -536,8 +566,8 @@ function defineReactive(obj, key) {
         dep.depend()
         if (childOb) {
           childOb.dep.depend()
-          if (Array.isArray(value)) {
-            value.forEach((item) => {
+          if (Array.isArray(val)) {
+            val.forEach((item) => {
               observe(item)
             })
           }
@@ -595,12 +625,14 @@ function initRender(vm) {
 function createElement(context, tag, data, children) {
   let vnode
   if (typeof tag === 'string') {
+    // children 数组打平
+    const childs = children.flat()
     // 源码定义了 isReservedTag 在 src/platforms/web/util/element.js
     if (['div,button,span'].includes(tag)) {
-      vnode = new _vdom__WEBPACK_IMPORTED_MODULE_0__.default(tag, data, children, undefined, context)
+      vnode = new _vdom__WEBPACK_IMPORTED_MODULE_0__.default(tag, data, childs, undefined, context)
     } else {
       // unknown
-      vnode = new _vdom__WEBPACK_IMPORTED_MODULE_0__.default(tag, data, children, undefined, context)
+      vnode = new _vdom__WEBPACK_IMPORTED_MODULE_0__.default(tag, data, childs, undefined, context)
     }
   } else {
     // direct component options / constructor 创建组件
@@ -614,6 +646,7 @@ function createComponent(tag, data, context, children) {}
 function installRenderHelpers(target) {
   target._s = toString
   target._v = _vdom__WEBPACK_IMPORTED_MODULE_0__.createTextVNode
+  target._l = renderList
 }
 
 function toString(val) {
@@ -623,6 +656,11 @@ function toString(val) {
       Object.prototype.toString.call(val).slice(8, -1) === 'Object'
     ? JSON.stringify(val, null, 2)
     : String(val)
+}
+
+function renderList(val, render) {
+  const ret = val.map((item) => render(item))
+  return ret
 }
 
 
@@ -656,6 +694,7 @@ class VNode {
     this.children = children
     this.text = text
     this.context = context
+    this.key = data && data.key
   }
 }
 
@@ -674,7 +713,7 @@ function patch(oldVnode, vnode) {
     patchVnode(oldVnode, vnode)
   } else {
     // 首次挂载
-    vnode.elm = createElm(vnode)
+    vnode.elm = createElm(vnode, document.body)
 
     _node_ops__WEBPACK_IMPORTED_MODULE_0__.insertBefore(document.body, vnode.elm, oldVnode)
     document.body.removeChild(oldVnode)
@@ -682,13 +721,15 @@ function patch(oldVnode, vnode) {
 }
 
 function createElm(vnode, parentElm) {
-  if (vnode.tag && vnode.children) {
+  // console.log(vnode.tag)
+  if (vnode.tag) {
     vnode.elm = _node_ops__WEBPACK_IMPORTED_MODULE_0__.createElement(vnode.tag)
 
     vnode.children.forEach((vn) => {
       const chElm = createElm(vn, vnode.elm)
       if (vn.data && vn.data.on) {
         Object.keys(vn.data.on).forEach((event) => {
+          console.log('listener')
           chElm.addEventListener(event, () => {
             console.log('click')
             vn.data.on[event]()
@@ -706,8 +747,8 @@ function createElm(vnode, parentElm) {
   return vnode.elm
 }
 
-function patchVnode(oldVnode, vnode, ownerArray, index) {
-  const elm = (vnode.elm = oldVnode.elm)
+function patchVnode(oldVnode, vnode) {
+  const elm = (vnode.elm = oldVnode.elm) // 直接复用dom
 
   const oldCh = oldVnode.children
   const ch = vnode.children
@@ -726,12 +767,60 @@ function patchVnode(oldVnode, vnode, ownerArray, index) {
   }
 }
 
-// TODO: diff算法 新旧首位两两比较
+// diff算法
 function updateChildren(parentElm, oldCh, newCh) {
-  for (let i = 0; i < oldCh.length; i++) {
-    const oldVnode = oldCh[i]
-    const newVnode = newCh[i]
-    patchVnode(oldVnode, newVnode)
+  let oldStartIdx = 0
+  let newStartIdx = 0
+  let oldEndIdx = oldCh.length - 1
+  let newEndIdx = newCh.length - 1
+  let oldStartVnode = oldCh[0]
+  let newStartVnode = newCh[0]
+  let oldEndVnode = oldCh[oldEndIdx]
+  let newEndVnode = newCh[newEndIdx]
+
+  let refElm
+
+  while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
+    // 这里oldVnode 不存在 是因为，之前的比对中根据key 找出来挪走了
+    if (!oldStartVnode) {
+      oldStartVnode = [++oldStartIdx]
+    } else if (!oldEndVnode) {
+      oldEndVnode = [--oldEndIdx]
+    } else if (sameVnode(oldStartVnode, newStartVnode)) {
+      patchVnode(oldStartVnode, newStartVnode)
+      oldStartVnode = oldCh[++oldStartIdx]
+      newStartVnode = newCh[++newStartIdx]
+    } else if (sameVnode(oldEndVnode, newEndVnode)) {
+      patchVnode(oldEndVnode, newEndVnode)
+      oldEndVnode = oldCh[--oldEndIdx]
+      newEndVnode = newCh[--newEndIdx]
+    } else if (sameVnode(oldStartVnode, newEndVnode)) {
+      // 老头 新尾
+      patchVnode(oldStartVnode, newEndVnode)
+      _node_ops__WEBPACK_IMPORTED_MODULE_0__.insertBefore(
+        parentElm,
+        oldStartVnode.elm,
+        _node_ops__WEBPACK_IMPORTED_MODULE_0__.nextSibling(oldEndVnode.elm)
+      )
+      oldStartVnode = oldCh[++oldStartIdx]
+      newEndVnode = newCh[--newEndIdx]
+    } else if (sameVnode(oldEndVnode, newStartVnode)) {
+      patchVnode(oldEndVnode, newStartVnode)
+      _node_ops__WEBPACK_IMPORTED_MODULE_0__.insertBefore(parentElm, oldEndVnode.elm, newStartVnode.elm)
+      oldEndVnode = oldCh[--oldEndIdx]
+      newStartVnode = newCh[++newStartIdx]
+    } else {
+      // TODO: 如果以上都没匹配到，就根据新的key 从老的节点里 把它找出来，然后挪到 newStartIdx 的位置，并清空
+      createElm(newStartVnode, parentElm)
+      newStartVnode = newCh[++newStartIdx]
+    }
+  }
+
+  if (oldStartIdx > oldEndIdx) {
+    refElm = !newCh[newEndIdx + 1] ? null : newCh[newEndIdx + 1].elm
+    addVnodes(parentElm, newCh, newStartIdx, newEndIdx)
+  } else if (newStartIdx > newEndIdx) {
+    removeVnodes(oldCh, oldStartIdx, oldEndIdx)
   }
 }
 
@@ -744,7 +833,7 @@ function addVnodes(parentElm, vnodes, startIdx, endIdx) {
 function removeVnodes(vnodes, startIdx, endIdx) {
   for (; startIdx <= endIdx; ++startIdx) {
     const ch = vnodes[startIdx]
-    if (isDef(ch)) {
+    if (ch) {
       removeNode(ch.elm)
     }
   }
@@ -755,6 +844,10 @@ function removeNode(el) {
   if (parent) {
     _node_ops__WEBPACK_IMPORTED_MODULE_0__.removeChild(parent, el)
   }
+}
+
+function sameVnode(a, b) {
+  return a.key === b.key && a.tag === b.tag
 }
 
 

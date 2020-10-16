@@ -24,3 +24,7 @@ export function parentNode(node) {
 export function removeChild(node, child) {
   node.removeChild(child)
 }
+
+export function nextSibling(node) {
+  return node.nextSibling
+}

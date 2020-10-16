@@ -25,7 +25,7 @@ const endTag = new RegExp(`^<\\/${qnameCapture}[^>]*>`)
 function parse(html) {
   const stack = []
   let index = 0
-  let last, lastTag
+  let last
   while (html) {
     last = html
     let textEnd = html.indexOf('<')
@@ -131,14 +131,9 @@ function parse(html) {
       }
     }
 
-    stack.push({
-      tag: tagName,
-      attrs: attrs,
-    })
-    lastTag = tagName
-
     // createASTElement
     let element = createASTElement(tagName, attrs, currentParent)
+    stack.push(element)
     if (currentParent) {
       currentParent.children.push(element)
       currentParent = element
@@ -148,7 +143,7 @@ function parse(html) {
       root = currentParent = element
     }
 
-    processAttr(element)
+    processAttrs(element)
   }
 
   return root
@@ -163,7 +158,6 @@ function createASTElement(tag, attrs, parent) {
     tag,
     attrsList: attrs,
     attrsMap: makeAttrsMap(attrs),
-    rawAttrsMap: {},
     parent,
     children: [],
   }
@@ -178,17 +172,26 @@ function makeAttrsMap(attrs) {
   return map
 }
 const onRE = /^@|^v-on:/
-function processAttr(el) {
+function processAttrs(el) {
   let events
   el.attrsList.forEach((attr) => {
     let { name, value } = attr
+    // v-on
     if (onRE.test(name)) {
-      // v-on
       name = name.replace(onRE, '')
       if (!events) events = {}
       events[name] = {
         value,
       }
+    }
+    //v-for
+    if (name === 'v-for') {
+      const [alias, forItems] = value.split(' in ')
+      el.alias = alias
+      el.for = forItems
+    }
+    if (name === ':key') {
+      el.key = value
     }
   })
   if (events) {
@@ -236,6 +239,9 @@ function generate(ast) {
 }
 
 function genElement(ast) {
+  if (ast.for && !ast.forProcessed) {
+    return genFor(ast)
+  }
   return `_c('${ast.tag}', ${genData(ast)}, ${getChildren(ast)})`
 }
 
@@ -258,23 +264,41 @@ function genText(text) {
 }
 
 function genData(ast) {
-  let data
+  let data = '{'
 
-  data = `{attrs:{${ast.attrsList
+  const attrs = ast.attrsList
     .filter((attr) => {
+      if (attr.name === ':key') return false
+      if (attr.name.startsWith('v-')) return false
       if (ast.events && ast.attrsMap.has(attr.name)) {
         return false
       }
       return true
     })
     .map((attr) => `${attr.name}: '${attr.value}'`)
-    .join(',')}}`
+    .join(',')
+
+  if (ast.key) {
+    data += `key:${ast.key},`
+  }
+  if (attrs !== '') {
+    data += `attrs:{${attrs}},`
+  }
   if (ast.events) {
-    data += ','
-    data += `on:{${Object.keys(ast.events).map(
-      (ev) => `${ev}:${ast.events[ev].value}`
-    )}}`
+    data += `on:{${Object.keys(ast.events)
+      .map((ev) => `${ev}:${ast.events[ev].value}`)
+      .join(',')}}`
   }
   data += '}'
   return data
+}
+
+function genFor(el) {
+  const exp = el.for
+  const alias = el.alias
+
+  el.forProcessed = true // 避免死循环
+  return (
+    `_l((${exp}),` + `function(${alias}){` + `return ${genElement(el)}` + '})'
+  )
 }

@@ -38,8 +38,8 @@ function defineReactive(obj, key) {
         dep.depend()
         if (childOb) {
           childOb.dep.depend()
-          if (Array.isArray(value)) {
-            value.forEach((item) => {
+          if (Array.isArray(val)) {
+            val.forEach((item) => {
               observe(item)
             })
           }
