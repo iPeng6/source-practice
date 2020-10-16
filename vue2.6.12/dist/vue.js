@@ -716,7 +716,7 @@ function patch(oldVnode, vnode) {
   }
 }
 
-function createElm(vnode, parentElm) {
+function createElm(vnode, parentElm, refElm) {
   // console.log(vnode.tag)
   if (vnode.tag) {
     vnode.elm = _node_ops__WEBPACK_IMPORTED_MODULE_0__.createElement(vnode.tag)
@@ -738,7 +738,11 @@ function createElm(vnode, parentElm) {
   }
 
   if (parentElm) {
-    _node_ops__WEBPACK_IMPORTED_MODULE_0__.appendChild(parentElm, vnode.elm)
+    if (refElm) {
+      _node_ops__WEBPACK_IMPORTED_MODULE_0__.insertBefore(parentElm, vnode.elm, refElm)
+    } else {
+      _node_ops__WEBPACK_IMPORTED_MODULE_0__.appendChild(parentElm, vnode.elm)
+    }
   }
   return vnode.elm
 }
@@ -802,27 +806,45 @@ function updateChildren(parentElm, oldCh, newCh) {
       newEndVnode = newCh[--newEndIdx]
     } else if (sameVnode(oldEndVnode, newStartVnode)) {
       patchVnode(oldEndVnode, newStartVnode)
-      _node_ops__WEBPACK_IMPORTED_MODULE_0__.insertBefore(parentElm, oldEndVnode.elm, newStartVnode.elm)
+      _node_ops__WEBPACK_IMPORTED_MODULE_0__.insertBefore(parentElm, oldEndVnode.elm, oldStartVnode.elm)
       oldEndVnode = oldCh[--oldEndIdx]
       newStartVnode = newCh[++newStartIdx]
     } else {
-      // TODO: 如果以上都没匹配到，就根据新的key 从老的节点里 把它找出来，然后挪到 newStartIdx 的位置，并清空
-      createElm(newStartVnode, parentElm)
+      //  如果以上都没匹配到，就根据新的key 从老的节点里 把它找出来，然后挪到 oldStartIdx 的位置，并清空
+      let idxInOld
+      for (let i = oldStartIdx; i <= oldEndIdx; ++i) {
+        if (oldCh[i] && newStartVnode.key == oldCh[i].key) {
+          idxInOld = i
+          break
+        }
+      }
+      if (!idxInOld) {
+        createElm(newStartVnode, parentElm, oldStartVnode.elm)
+      } else {
+        let vnodeToMove = oldCh[idxInOld]
+        if (sameVnode(vnodeToMove, newStartVnode)) {
+          patchVnode(vnodeToMove, newStartVnode)
+          oldCh[idxInOld] = undefined
+          _node_ops__WEBPACK_IMPORTED_MODULE_0__.insertBefore(parentElm, vnodeToMove.elm, oldStartVnode.elm)
+        } else {
+          createElm(newStartVnode, parentElm, oldStartVnode.elm)
+        }
+      }
       newStartVnode = newCh[++newStartIdx]
     }
   }
 
   if (oldStartIdx > oldEndIdx) {
     refElm = !newCh[newEndIdx + 1] ? null : newCh[newEndIdx + 1].elm
-    addVnodes(parentElm, newCh, newStartIdx, newEndIdx)
+    addVnodes(parentElm, refElm, newCh, newStartIdx, newEndIdx)
   } else if (newStartIdx > newEndIdx) {
     removeVnodes(oldCh, oldStartIdx, oldEndIdx)
   }
 }
 
-function addVnodes(parentElm, vnodes, startIdx, endIdx) {
+function addVnodes(parentElm, refElm, vnodes, startIdx, endIdx) {
   for (; startIdx <= endIdx; ++startIdx) {
-    createElm(vnodes[startIdx], parentElm)
+    createElm(vnodes[startIdx], parentElm, refElm)
   }
 }
 

@@ -26,7 +26,10 @@
         methods: {
           add() {
             this.count++
-            this.items = Array.from(Math.random().toString().slice(8))
+            // this.items = ['f', 'c', 'a', 'd']
+            this.items = [
+              ...new Set(Array.from(Math.random().toString().slice(8))),
+            ]
           },
         },
       })
