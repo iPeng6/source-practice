@@ -114,8 +114,8 @@ Vue.prototype.$mount = function() {
 
 4. 数据修改更新
    1. patch
-      1. 首次
-      2. diff
+      1. 首次 createElm
+      2. diff updateChildren
 
 ### 模板编译
 
@@ -162,7 +162,7 @@ generate 生成 render 函数
 ```js
 vnode = {
   tag:'divta
-  data:{id:'app'},
+  data:{attrs:{id:'app'}},
   children:[
     {
       tag: 'button',
@@ -174,5 +174,49 @@ vnode = {
     }
   ],
   context:vm
+}
+```
+
+VNode 生成 dom
+
+```js
+export function patch(oldVnode, vnode) {
+  console.log('patch', oldVnode, vnode)
+  if (oldVnode instanceof VNode) {
+    // diff更新
+    patchVnode(oldVnode, vnode)
+  } else {
+    // 首次挂载
+    vnode.elm = createElm(vnode, document.body)
+
+    nodeOps.insertBefore(document.body, vnode.elm, oldVnode)
+    document.body.removeChild(oldVnode)
+  }
+}
+function createElm(vnode, parentElm) {
+  // console.log(vnode.tag)
+  if (vnode.tag) {
+    vnode.elm = nodeOps.createElement(vnode.tag)
+
+    vnode.children.forEach((vn) => {
+      const chElm = createElm(vn, vnode.elm)
+      if (vn.data && vn.data.on) {
+        Object.keys(vn.data.on).forEach((event) => {
+          console.log('listener')
+          chElm.addEventListener(event, () => {
+            console.log('click')
+            vn.data.on[event]()
+          })
+        })
+      }
+    })
+  } else {
+    vnode.elm = nodeOps.createTextNode(vnode.text)
+  }
+
+  if (parentElm) {
+    nodeOps.appendChild(parentElm, vnode.elm)
+  }
+  return vnode.elm
 }
 ```

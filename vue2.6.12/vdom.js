@@ -18,11 +18,7 @@ export function createTextVNode(val) {
 export function patch(oldVnode, vnode) {
   console.log('patch', oldVnode, vnode)
   if (oldVnode instanceof VNode) {
-    // TODO: diff
-    // vnode.elm = createElm(vnode)
-
-    // document.body.replaceChild(vnode.elm, oldVnode.elm)
-
+    // diff更新
     patchVnode(oldVnode, vnode)
   } else {
     // 首次挂载
