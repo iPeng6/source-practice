@@ -41,6 +41,7 @@ Vue.prototype.mountComponent = function (vm, el) {
   }
   new Watcher(vm, updateComponent, noop, {}, true)
 
+  // Watcher的第二个参数如果是function 会被立即执行，所以立即_update 立即 patch，patch就是直接操作dom了
   // callHook(vm, 'mounted')
 }
 
@@ -58,7 +59,7 @@ Vue.prototype._update = function (vnode) {
 
   if (!prevVnode) {
     // initial render
-    vm.$el = patch(vm.$el, vnode, false /* removeOnly */)
+    vm.$el = patch(vm.$el, vnode)
   } else {
     // updates
     vm.$el = patch(prevVnode, vnode)

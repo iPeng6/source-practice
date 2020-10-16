@@ -432,6 +432,9 @@ function proxy(target, sourceKey, key) {
 /*! export createElement [provided] [no usage info] [missing usage info prevents renaming] */
 /*! export createTextNode [provided] [no usage info] [missing usage info prevents renaming] */
 /*! export insertBefore [provided] [no usage info] [missing usage info prevents renaming] */
+/*! export parentNode [provided] [no usage info] [missing usage info prevents renaming] */
+/*! export removeChild [provided] [no usage info] [missing usage info prevents renaming] */
+/*! export setTextContent [provided] [no usage info] [missing usage info prevents renaming] */
 /*! other exports [not provided] [no usage info] */
 /*! runtime requirements: __webpack_require__.r, __webpack_exports__, __webpack_require__.d, __webpack_require__.* */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
@@ -441,7 +444,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "createElement": () => /* binding */ createElement,
 /* harmony export */   "createTextNode": () => /* binding */ createTextNode,
 /* harmony export */   "insertBefore": () => /* binding */ insertBefore,
-/* harmony export */   "appendChild": () => /* binding */ appendChild
+/* harmony export */   "appendChild": () => /* binding */ appendChild,
+/* harmony export */   "setTextContent": () => /* binding */ setTextContent,
+/* harmony export */   "parentNode": () => /* binding */ parentNode,
+/* harmony export */   "removeChild": () => /* binding */ removeChild
 /* harmony export */ });
 function createElement(tagName) {
   return document.createElement(tagName)
@@ -456,6 +462,18 @@ function insertBefore(parentNode, newNode, referenceNode) {
 
 function appendChild(node, child) {
   node.appendChild(child)
+}
+
+function setTextContent(node, text) {
+  node.textContent = text
+}
+
+function parentNode(node) {
+  return node.parentNode
+}
+
+function removeChild(node, child) {
+  node.removeChild(child)
 }
 
 
@@ -648,41 +666,94 @@ function createTextVNode(val) {
 function patch(oldVnode, vnode) {
   console.log('patch', oldVnode, vnode)
   if (oldVnode instanceof VNode) {
-    // diff todo
-    const root = createNode(vnode)
-    vnode.el = root
-    document.body.replaceChild(root, oldVnode.el)
+    // TODO: diff
+    // vnode.elm = createElm(vnode)
+
+    // document.body.replaceChild(vnode.elm, oldVnode.elm)
+
+    patchVnode(oldVnode, vnode)
   } else {
     // 首次挂载
-    const root = createNode(vnode)
-    vnode.el = root
-    _node_ops__WEBPACK_IMPORTED_MODULE_0__.insertBefore(document.body, root, oldVnode)
+    vnode.elm = createElm(vnode)
+
+    _node_ops__WEBPACK_IMPORTED_MODULE_0__.insertBefore(document.body, vnode.elm, oldVnode)
     document.body.removeChild(oldVnode)
   }
+}
 
-  function createNode(vnode, parent) {
-    let node
-    if (vnode.tag && vnode.children) {
-      node = _node_ops__WEBPACK_IMPORTED_MODULE_0__.createElement(vnode.tag)
-      vnode.children.forEach((vn) => {
-        const dom = createNode(vn, node)
-        if (vn.data && vn.data.on) {
-          Object.keys(vn.data.on).forEach((event) => {
-            dom.addEventListener(event, () => {
-              console.log('click')
-              vn.data.on[event]()
-            })
+function createElm(vnode, parentElm) {
+  if (vnode.tag && vnode.children) {
+    vnode.elm = _node_ops__WEBPACK_IMPORTED_MODULE_0__.createElement(vnode.tag)
+
+    vnode.children.forEach((vn) => {
+      const chElm = createElm(vn, vnode.elm)
+      if (vn.data && vn.data.on) {
+        Object.keys(vn.data.on).forEach((event) => {
+          chElm.addEventListener(event, () => {
+            console.log('click')
+            vn.data.on[event]()
           })
-        }
-      })
-    } else {
-      node = _node_ops__WEBPACK_IMPORTED_MODULE_0__.createTextNode(vnode.text)
-    }
+        })
+      }
+    })
+  } else {
+    vnode.elm = _node_ops__WEBPACK_IMPORTED_MODULE_0__.createTextNode(vnode.text)
+  }
 
-    if (parent) {
-      _node_ops__WEBPACK_IMPORTED_MODULE_0__.appendChild(parent, node)
+  if (parentElm) {
+    _node_ops__WEBPACK_IMPORTED_MODULE_0__.appendChild(parentElm, vnode.elm)
+  }
+  return vnode.elm
+}
+
+function patchVnode(oldVnode, vnode, ownerArray, index) {
+  const elm = (vnode.elm = oldVnode.elm)
+
+  const oldCh = oldVnode.children
+  const ch = vnode.children
+  if (!vnode.text) {
+    if (oldCh && ch && oldCh !== ch) updateChildren(elm, oldCh, ch)
+    else if (ch) {
+      if (oldVnode.text) _node_ops__WEBPACK_IMPORTED_MODULE_0__.setTextContent(elm, '')
+      addVnodes(elm, ch, 0, ch.length - 1)
+    } else if (oldCh) {
+      removeVnodes(oldCh, 0, oldCh.length - 1)
+    } else if (oldVnode.text) {
+      _node_ops__WEBPACK_IMPORTED_MODULE_0__.setTextContent(elm, '')
     }
-    return node
+  } else if (oldVnode.text !== vnode.text) {
+    _node_ops__WEBPACK_IMPORTED_MODULE_0__.setTextContent(elm, vnode.text)
+  }
+}
+
+// TODO: diff算法 新旧首位两两比较
+function updateChildren(parentElm, oldCh, newCh) {
+  for (let i = 0; i < oldCh.length; i++) {
+    const oldVnode = oldCh[i]
+    const newVnode = newCh[i]
+    patchVnode(oldVnode, newVnode)
+  }
+}
+
+function addVnodes(parentElm, vnodes, startIdx, endIdx) {
+  for (; startIdx <= endIdx; ++startIdx) {
+    createElm(vnodes[startIdx], parentElm)
+  }
+}
+
+function removeVnodes(vnodes, startIdx, endIdx) {
+  for (; startIdx <= endIdx; ++startIdx) {
+    const ch = vnodes[startIdx]
+    if (isDef(ch)) {
+      removeNode(ch.elm)
+    }
+  }
+}
+
+function removeNode(el) {
+  const parent = _node_ops__WEBPACK_IMPORTED_MODULE_0__.parentNode(el)
+  if (parent) {
+    _node_ops__WEBPACK_IMPORTED_MODULE_0__.removeChild(parent, el)
   }
 }
 
@@ -751,6 +822,7 @@ Vue.prototype.mountComponent = function (vm, el) {
   }
   new _watcher__WEBPACK_IMPORTED_MODULE_0__.default(vm, updateComponent, noop, {}, true)
 
+  // Watcher的第二个参数如果是function 会被立即执行，所以立即_update 立即 patch，patch就是直接操作dom了
   // callHook(vm, 'mounted')
 }
 
@@ -768,7 +840,7 @@ Vue.prototype._update = function (vnode) {
 
   if (!prevVnode) {
     // initial render
-    vm.$el = (0,_vdom__WEBPACK_IMPORTED_MODULE_4__.patch)(vm.$el, vnode, false /* removeOnly */)
+    vm.$el = (0,_vdom__WEBPACK_IMPORTED_MODULE_4__.patch)(vm.$el, vnode)
   } else {
     // updates
     vm.$el = (0,_vdom__WEBPACK_IMPORTED_MODULE_4__.patch)(prevVnode, vnode)

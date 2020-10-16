@@ -17,40 +17,93 @@ export function createTextVNode(val) {
 export function patch(oldVnode, vnode) {
   console.log('patch', oldVnode, vnode)
   if (oldVnode instanceof VNode) {
-    // diff todo
-    const root = createNode(vnode)
-    vnode.el = root
-    document.body.replaceChild(root, oldVnode.el)
+    // TODO: diff
+    // vnode.elm = createElm(vnode)
+
+    // document.body.replaceChild(vnode.elm, oldVnode.elm)
+
+    patchVnode(oldVnode, vnode)
   } else {
     // 首次挂载
-    const root = createNode(vnode)
-    vnode.el = root
-    nodeOps.insertBefore(document.body, root, oldVnode)
+    vnode.elm = createElm(vnode)
+
+    nodeOps.insertBefore(document.body, vnode.elm, oldVnode)
     document.body.removeChild(oldVnode)
   }
+}
 
-  function createNode(vnode, parent) {
-    let node
-    if (vnode.tag && vnode.children) {
-      node = nodeOps.createElement(vnode.tag)
-      vnode.children.forEach((vn) => {
-        const dom = createNode(vn, node)
-        if (vn.data && vn.data.on) {
-          Object.keys(vn.data.on).forEach((event) => {
-            dom.addEventListener(event, () => {
-              console.log('click')
-              vn.data.on[event]()
-            })
+function createElm(vnode, parentElm) {
+  if (vnode.tag && vnode.children) {
+    vnode.elm = nodeOps.createElement(vnode.tag)
+
+    vnode.children.forEach((vn) => {
+      const chElm = createElm(vn, vnode.elm)
+      if (vn.data && vn.data.on) {
+        Object.keys(vn.data.on).forEach((event) => {
+          chElm.addEventListener(event, () => {
+            console.log('click')
+            vn.data.on[event]()
           })
-        }
-      })
-    } else {
-      node = nodeOps.createTextNode(vnode.text)
-    }
+        })
+      }
+    })
+  } else {
+    vnode.elm = nodeOps.createTextNode(vnode.text)
+  }
 
-    if (parent) {
-      nodeOps.appendChild(parent, node)
+  if (parentElm) {
+    nodeOps.appendChild(parentElm, vnode.elm)
+  }
+  return vnode.elm
+}
+
+function patchVnode(oldVnode, vnode, ownerArray, index) {
+  const elm = (vnode.elm = oldVnode.elm)
+
+  const oldCh = oldVnode.children
+  const ch = vnode.children
+  if (!vnode.text) {
+    if (oldCh && ch && oldCh !== ch) updateChildren(elm, oldCh, ch)
+    else if (ch) {
+      if (oldVnode.text) nodeOps.setTextContent(elm, '')
+      addVnodes(elm, ch, 0, ch.length - 1)
+    } else if (oldCh) {
+      removeVnodes(oldCh, 0, oldCh.length - 1)
+    } else if (oldVnode.text) {
+      nodeOps.setTextContent(elm, '')
     }
-    return node
+  } else if (oldVnode.text !== vnode.text) {
+    nodeOps.setTextContent(elm, vnode.text)
+  }
+}
+
+// TODO: diff算法 新旧首位两两比较
+function updateChildren(parentElm, oldCh, newCh) {
+  for (let i = 0; i < oldCh.length; i++) {
+    const oldVnode = oldCh[i]
+    const newVnode = newCh[i]
+    patchVnode(oldVnode, newVnode)
+  }
+}
+
+function addVnodes(parentElm, vnodes, startIdx, endIdx) {
+  for (; startIdx <= endIdx; ++startIdx) {
+    createElm(vnodes[startIdx], parentElm)
+  }
+}
+
+function removeVnodes(vnodes, startIdx, endIdx) {
+  for (; startIdx <= endIdx; ++startIdx) {
+    const ch = vnodes[startIdx]
+    if (isDef(ch)) {
+      removeNode(ch.elm)
+    }
+  }
+}
+
+function removeNode(el) {
+  const parent = nodeOps.parentNode(el)
+  if (parent) {
+    nodeOps.removeChild(parent, el)
   }
 }
