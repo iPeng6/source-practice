@@ -5,7 +5,7 @@ import FieldFormDemo from './FieldFormDemo'
 function App() {
   return (
     <div className="App">
-      {/* <FormPage></FormPage> */}
+      <FormPage></FormPage>
       <FieldFormDemo></FieldFormDemo>
     </div>
   )

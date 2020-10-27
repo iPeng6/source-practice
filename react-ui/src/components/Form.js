@@ -9,10 +9,24 @@ export default function Form({ form, onFinish, children, ...restProps }) {
       ...formInstance,
     }
   }, [formInstance])
+
+  const { setCallbacks } = formInstance
+  setCallbacks({
+    onFinish,
+  })
   console.log('form')
   return (
-    <FieldContext.Provider value={formContextValue}>
-      {children}
-    </FieldContext.Provider>
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+
+        formInstance.submit()
+      }}
+    >
+      <FieldContext.Provider value={formContextValue}>
+        {children}
+      </FieldContext.Provider>
+    </form>
   )
 }

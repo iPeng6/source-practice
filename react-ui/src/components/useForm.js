@@ -5,6 +5,7 @@ export class FormStore {
   forceRootUpdate
 
   fieldEntities = []
+  callbacks = {}
 
   constructor(forceRootUpdate) {
     this.forceRootUpdate = forceRootUpdate
@@ -17,6 +18,8 @@ export class FormStore {
       dispatch: this.dispatch,
       updateValue: this.updateValue,
       registerField: this.registerField,
+      setCallbacks: this.setCallbacks,
+      submit: this.submit,
     }
   }
 
@@ -73,8 +76,15 @@ export class FormStore {
       default:
     }
   }
+  setCallbacks = (callbacks) => {
+    this.callbacks = callbacks
+  }
   submit = () => {
     console.log('submit')
+    const { onFinish } = this.callbacks
+    if (onFinish) {
+      onFinish(this.store)
+    }
   }
 }
 
