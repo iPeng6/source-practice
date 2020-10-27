@@ -1,7 +1,9 @@
-import { Button, Form, Input } from 'antd'
+// import { Button, Form, Input } from 'antd'
+
 import React from 'react'
 import { UserAddOutlined, LockOutlined } from '@ant-design/icons'
-// import Input from './components/Input'
+import Input from './components/Input'
+import Form from './components/Form'
 
 const nameRules = [
   {
@@ -34,14 +36,9 @@ const FormPage = () => {
           <Input placeholder="请输入姓名" prefix={<UserAddOutlined />}></Input>
         </Form.Item>
         <Form.Item label="密码" name="password" rules={passwordRules}>
-          <Input.Password
-            placeholder="请输入密码"
-            prefix={<LockOutlined />}
-          ></Input.Password>
+          <Input placeholder="请输入密码" prefix={<LockOutlined />}></Input>
         </Form.Item>
-        <Button type="primary" htmlType="submit">
-          提交
-        </Button>
+        <button>提交</button>
       </Form>
     </div>
   )

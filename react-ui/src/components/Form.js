@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react'
 import useForm from './useForm'
 import FieldContext from './FieldContext'
+import FormItem from './FormItem'
 
-export default function Form({ form, onFinish, children, ...restProps }) {
+function Form({ form, onFinish, children, ...restProps }) {
   const [formInstance] = useForm(form)
   const formContextValue = useMemo(() => {
     return {
@@ -30,3 +31,5 @@ export default function Form({ form, onFinish, children, ...restProps }) {
     </form>
   )
 }
+Form.Item = FormItem
+export default Form

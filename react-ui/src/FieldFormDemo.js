@@ -11,7 +11,15 @@ function Demo() {
         console.log('Finish:', values)
       }}
     >
-      <Field name="username">
+      <Field
+        name="username"
+        rules={[
+          {
+            required: true,
+            message: 'Please input your username!',
+          },
+        ]}
+      >
         <Input placeholder="Username" />
       </Field>
       <Field name="password">

@@ -21,11 +21,13 @@ export default class Input extends Component {
     this.setState({ value: e.target.value })
   }
   render() {
-    const { prefix, value = '', ...restProps } = this.props
+    const { prefix, value = '', errors, ...restProps } = this.props
+    console.log('input', errors)
     return (
       <span>
         {prefix}
         <input value={value} onChange={this.onChange} {...restProps}></input>
+        <div style={{ color: 'red' }}>{errors.join(' ')}</div>
       </span>
     )
   }

@@ -1,7 +1,9 @@
 import React from 'react'
 
 const warningFunc = () => {
-  console.log('waring')
+  console.log(
+    'waring 这个地方只是一些初始定义，实际上还是用的 FormContext 里的方法'
+  )
 }
 
 const Context = React.createContext({
@@ -9,10 +11,6 @@ const Context = React.createContext({
   getFieldsValue: warningFunc,
   getFieldError: warningFunc,
   getFieldsError: warningFunc,
-  isFieldsTouched: warningFunc,
-  isFieldTouched: warningFunc,
-  isFieldValidating: warningFunc,
-  isFieldsValidating: warningFunc,
   resetFields: warningFunc,
   setFields: warningFunc,
   setFieldsValue: warningFunc,

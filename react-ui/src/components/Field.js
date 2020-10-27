@@ -1,8 +1,10 @@
 import React, { Component } from 'react'
 import FieldContext from './FieldContext'
+import AsyncValidator from 'async-validator'
 
 class Field extends Component {
   static contextType = FieldContext
+  errors = []
   constructor(props) {
     super(props)
     const { registerField } = props.fieldContext
@@ -10,6 +12,25 @@ class Field extends Component {
   }
   componentDidMount() {
     this.mounted = true
+  }
+  validateRule = async () => {
+    const { name, rules } = this.props
+    const value = this.getValue()
+    let result = []
+    if (rules) {
+      const validator = new AsyncValidator({
+        [name]: rules,
+      })
+      this.errors = []
+      try {
+        await validator.validate({ [name]: value })
+      } catch (errObj) {
+        result = errObj.errors.map(({ message }) => message)
+        this.errors = result
+      }
+    }
+    this.reRender()
+    return result
   }
   getValue = () => {
     const { getFieldValue } = this.props.fieldContext
@@ -30,7 +51,10 @@ class Field extends Component {
   render() {
     const { children } = this.props
     const value = this.getValue()
-    console.log('Field', value)
+    console.log('Field', value, this.errors)
+    if (typeof children === 'function') {
+      return children(value, this.errors, this.onChange)
+    }
     return React.isValidElement(children)
       ? React.cloneElement(children, { value, onChange: this.onChange })
       : null

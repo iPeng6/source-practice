@@ -6,6 +6,7 @@ export class FormStore {
 
   fieldEntities = []
   callbacks = {}
+  errors = []
 
   constructor(forceRootUpdate) {
     this.forceRootUpdate = forceRootUpdate
@@ -58,8 +59,18 @@ export class FormStore {
       this.fieldEntities = this.fieldEntities.filter((item) => item !== entity)
     }
   }
-  validateFields = () => {
-    //
+  validateFields = async () => {
+    const result = []
+
+    for (const field of this.fieldEntities) {
+      const errors = await field.validateRule()
+      field.errors = errors
+      result.push({
+        name: field.name,
+        errors: field.errors,
+      })
+    }
+    return result
   }
   dispatch = (action) => {
     switch (action.type) {
@@ -82,6 +93,8 @@ export class FormStore {
   submit = () => {
     console.log('submit')
     const { onFinish } = this.callbacks
+    this.validateFields()
+
     if (onFinish) {
       onFinish(this.store)
     }
