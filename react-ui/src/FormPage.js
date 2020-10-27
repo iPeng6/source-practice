@@ -1,6 +1,7 @@
-import { Button, Form, Input } from 'antd'
+import { Button, Form } from 'antd'
 import React from 'react'
 import { UserAddOutlined, LockOutlined } from '@ant-design/icons'
+import Input from './components/Input'
 
 const nameRules = [
   {
@@ -27,7 +28,8 @@ const FormPage = () => {
   return (
     <div>
       <h3>FormPage</h3>
-      <Form onFinish={onFinish} onFinishFailed={onFinishFailed}>
+      <Input placeholder="请输入姓名" prefix={<UserAddOutlined />}></Input>
+      {/* <Form onFinish={onFinish} onFinishFailed={onFinishFailed}>
         <Form.Item label="姓名" name="name" rules={nameRules}>
           <Input placeholder="请输入姓名" prefix={<UserAddOutlined />}></Input>
         </Form.Item>
@@ -40,7 +42,7 @@ const FormPage = () => {
         <Button type="primary" htmlType="submit">
           提交
         </Button>
-      </Form>
+      </Form> */}
     </div>
   )
 }
