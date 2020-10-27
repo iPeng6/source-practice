@@ -1,10 +1,11 @@
 import { Button } from 'antd'
 import './App.css'
+import FormPage from './FormPage'
 
 function App() {
   return (
     <div className="App">
-      <Button type="primary">Button</Button>
+      <FormPage></FormPage>
     </div>
   )
 }
