@@ -1,50 +1,48 @@
 import { Button, Form, Input } from 'antd'
-import React, { Component } from 'react'
+import React from 'react'
 import { UserAddOutlined, LockOutlined } from '@ant-design/icons'
 
-export default class FormPage extends Component {
-  constructor(props) {
-    super(props)
-    this.state = {
-      name: '',
-      password: '',
-    }
+const nameRules = [
+  {
+    required: true,
+    message: 'Please input your username!',
+  },
+]
+
+const passwordRules = [
+  {
+    required: true,
+    message: 'Please input your password!',
+  },
+]
+
+const FormPage = () => {
+  const onFinish = (values) => {
+    console.log('Success:', values)
   }
-  submit = () => {
-    console.log(this.state)
+
+  const onFinishFailed = (errorInfo) => {
+    console.log('Failed:', errorInfo)
   }
-  render() {
-    const { name, password } = this.state
-    return (
-      <div>
-        <h3>FormPage</h3>
-        <Form>
-          <Form.Item label="姓名">
-            <Input
-              placeholder="请输入姓名"
-              prefix={<UserAddOutlined />}
-              value={name}
-              onChange={(e) => {
-                this.setState({ name: e.target.value })
-              }}
-            ></Input>
-          </Form.Item>
-          <Form.Item label="密码">
-            <Input
-              type="password"
-              placeholder="请输入密码"
-              prefix={<LockOutlined />}
-              value={password}
-              onChange={(e) => {
-                this.setState({ password: e.target.value })
-              }}
-            ></Input>
-          </Form.Item>
-          <Button type="primary" onClick={this.submit}>
-            提交
-          </Button>
-        </Form>
-      </div>
-    )
-  }
+  return (
+    <div>
+      <h3>FormPage</h3>
+      <Form onFinish={onFinish} onFinishFailed={onFinishFailed}>
+        <Form.Item label="姓名" name="name" rules={nameRules}>
+          <Input placeholder="请输入姓名" prefix={<UserAddOutlined />}></Input>
+        </Form.Item>
+        <Form.Item label="密码" name="password" rules={passwordRules}>
+          <Input.Password
+            placeholder="请输入密码"
+            prefix={<LockOutlined />}
+          ></Input.Password>
+        </Form.Item>
+        <Button type="primary" htmlType="submit">
+          提交
+        </Button>
+      </Form>
+    </div>
+  )
 }
+
+export default FormPage
