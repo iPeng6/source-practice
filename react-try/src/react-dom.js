@@ -8,6 +8,15 @@ function render(vnode, dom) {
     el = document.createTextNode(props.nodeValue)
   } else if (typeof type === 'symbol' || !type) {
     el = document.createDocumentFragment()
+  } else if (typeof type === 'function') {
+    if (type.isClassComponent) {
+      const cVnode = new type(props).render()
+      render(cVnode, dom)
+    } else {
+      const fVnode = type(props)
+      render(fVnode, dom)
+    }
+    return
   } else {
     el = document.createElement(type)
     updateProps(el, props)

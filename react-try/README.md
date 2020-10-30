@@ -1,4 +1,6 @@
-## 笔记
+# 要点笔记
+
+## jsx
 
 ```js
 const jsx = (
@@ -67,7 +69,6 @@ if (process.env.NODE_ENV === 'production') {
 `./cjs/react-jsx-dev-runtime.development.js`找到`__["jsxDEV"]`引用
 
 ```js
-
 var ReactElement = function (type, key, ref, self, source, owner, props) {
   var element = {
     // This tag allows us to uniquely identify this as a React Element
@@ -121,3 +122,58 @@ exports.jsxDEV = jsxDEV$1;
 ```
 
 没有看到 children 的处理，入参props已经有了children，说明babel编译时已经将children作为props处理了
+
+
+
+## vnode  => dom
+
+```js
+function render(vnode, dom) {
+  console.log(vnode)
+  const { type, props } = vnode
+
+  let el
+
+  if (type === 'TEXT') {
+    el = document.createTextNode(props.nodeValue)
+  } else if (typeof type === 'symbol' || !type) {
+    el = document.createDocumentFragment()
+  } else if (typeof type === 'function') {
+    if (type.isClassComponent) {
+      const cVnode = new type(props).render()
+      render(cVnode, dom)
+    } else {
+      const fVnode = type(props)
+      render(fVnode, dom)
+    }
+    return
+  } else {
+    el = document.createElement(type)
+    updateProps(el, props)
+  }
+
+  if (Array.isArray(vnode)) {
+    updateChildren(vnode, el)
+  } else {
+    updateChildren(props.children, el)
+  }
+
+  dom.appendChild(el)
+}
+```
+
+1. 文本节点
+2. fragment (type: Symbol(react.fragment))
+   1. fragment 标签
+   2. map数组返回 也是 fragment
+3. function
+   1. class本质上也是个function，vnode在实例render里
+   2. 函数组件
+
+4. 常规元素
+
+5. vnode 本身可能是数组 如 map返回 没有type props
+6. children
+   1. 数组
+   2. 对象 单个节点
+   3. string 文本

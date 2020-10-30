@@ -1,10 +1,6 @@
-function createElement(type, props, children) {
-  console.log('createElement')
-  return {
-    type,
+export class Component {
+  static isClassComponent = true
+  constructor(props) {
+    this.props = props
   }
 }
-
-const React = { createElement }
-
-export default React
