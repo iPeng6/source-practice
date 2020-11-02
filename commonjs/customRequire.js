@@ -5,16 +5,15 @@ const vm = require('vm')
 function customRequire(modulePath) {
   const filePath = path.resolve(__dirname, modulePath)
   const code = fs.readFileSync(filePath, 'utf-8')
-  const wraperFunc = `
-  (function(require, module, exports){
+  const wrapperFunc = `
+  (function(exports, require, module ){
     ${code}
   })
   `
 
-  const script = new vm.Script(wraperFunc)
-  const func = script.runInThisContext()
+  const func = vm.runInThisContext(wrapperFunc)
   const m = { exports: {} }
-  func(customRequire, m, m.exports)
+  func(m.exports, customRequire, m)
   return m.exports
 }
 
