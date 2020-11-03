@@ -15,6 +15,7 @@ requestIdleCallback(workLoop)
 
 function performUnitOfWork(fiber) {
   console.log(fiber)
+  const { type, props } = fiber
   if (!fiber.dom) {
     fiber.dom = createDom(fiber)
   }
@@ -23,18 +24,38 @@ function performUnitOfWork(fiber) {
   //   fiber.parent.dom.appendChild(fiber.dom)
   // }
 
-  const children = fiber.props.children
+  let children = fiber.props.children
+
+  if (typeof fiber.type === 'function') {
+    if (type.isClassComponent) {
+      const cVnode = new type(props).render()
+      children = cVnode
+    } else {
+      const fVnode = type(props)
+      children = fVnode
+    }
+  }
 
   if (Array.isArray(children)) {
     let index = 0
     let prevSibling = null
     while (index < children.length) {
       const curVnode = children[index]
-      const newFiber = {
-        type: curVnode.type,
-        props: curVnode.props,
-        parent: fiber,
-        dom: null,
+      let newFiber
+      if (Array.isArray(curVnode)) {
+        newFiber = {
+          type: 'FRAGMENT',
+          props: { children: curVnode },
+          parent: fiber,
+          dom: null,
+        }
+      } else {
+        newFiber = {
+          type: curVnode.type,
+          props: curVnode.props,
+          parent: fiber,
+          dom: null,
+        }
       }
 
       if (index === 0) {
@@ -53,9 +74,9 @@ function performUnitOfWork(fiber) {
       dom: null,
     }
     fiber.child = newFiber
-  } else if (typeof children === 'string') {
+  } else if (typeof children === 'string' || typeof children === 'number') {
     const newFiber = {
-      type: children.type,
+      type: 'TEXT',
       props: { nodeValue: children },
       parent: fiber,
       dom: null,
@@ -91,27 +112,17 @@ function createDom(fiber) {
 
   let el
 
-  if (!type) {
+  if (type === 'TEXT') {
     el = document.createTextNode(props.nodeValue)
+  } else if (type === 'FRAGMENT' || typeof type === 'symbol') {
+    el = document.createDocumentFragment()
   } else if (typeof type === 'function') {
-    if (type.isClassComponent) {
-      // const cVnode = new type(props).render()
-    } else {
-      // const fVnode = type(props)
-    }
-    return
-  } else if (type && typeof type !== 'symbol') {
+    el = document.createDocumentFragment()
+  } else {
     el = document.createElement(type)
     updateProps(el, props)
-  } else {
-    el = document.createDocumentFragment()
   }
 
-  // if (Array.isArray(vnode)) {
-  //   updateChildren(vnode, el)
-  // } else {
-  //   updateChildren(props.children, el)
-  // }
   return el
 }
 
