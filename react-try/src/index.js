@@ -2,7 +2,8 @@
 // import ReactDOM from 'react-dom'
 
 import { Component } from './react'
-import ReactDOM from './react-dom'
+// import ReactDOM from './react-dom'
+import ReactDOM from './react-fiber'
 
 function FunctionComp({ name }) {
   return <div>{name}</div>
@@ -27,11 +28,11 @@ const jsx = (
       <p>a</p>
       <p>b</p>
     </>
-    {[1, 2, 3].map((item) => {
+    {/* {[1, 2, 3].map((item) => {
       return <div key={item}>{item}</div>
     })}
     <FunctionComp name="func comp"></FunctionComp>
-    <ClassComp name="class comp"></ClassComp>
+    <ClassComp name="class comp"></ClassComp> */}
   </div>
 )
 
