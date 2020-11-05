@@ -7,9 +7,18 @@
 <script>
 export default {
   name: "YlMessage",
+  props: {
+    message: {
+      type: String,
+      default: ''
+    },
+    duration: {
+      type: Number,
+      default: 1000,
+    }
+  },
   data() {
     return {
-      message: "",
       timer: null,
     };
   },
@@ -17,7 +26,7 @@ export default {
     startTimer() {
       this.timer = setTimeout(() => {
         this.close();
-      }, this.duration || 1000);
+      }, this.duration);
     },
     clearTimer() {
       this.timer && clearTimeout(this.timer);

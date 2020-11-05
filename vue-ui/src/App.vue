@@ -48,7 +48,7 @@ export default {
         if (valid) {
           this.$message("success");
         } else {
-          this.$message({ message: "fail", duration: 2000 });
+          this.$message({ message: "fail" });
         }
       });
     },
